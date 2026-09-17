@@ -40,6 +40,13 @@
     (ok (equal (list :n 2 :ok t) (task-protocol:step-result copy)))
     (ok (equal "k" (task-protocol:step-idempotency-key copy)))))
 
+(deftest decode-event-does-not-guess-vector-plist
+  "H5: even-length string vectors are arrays, not objects."
+  (ok (signals (task-backend-sql:decode-event #("TYPE" "TASK-STARTED"))
+               'task-protocol:task-unknown-codec))
+  (ok (signals (task-protocol:event-from-plist #("TYPE" "TASK-STARTED"))
+               'type-error)))
+
 (deftest lease-sql-is-sqlite-friendly
   (let ((select (task-backend-sql:claimable-lease-sql "task_lease"))
         (update (task-backend-sql:claim-lease-sql "task_lease")))

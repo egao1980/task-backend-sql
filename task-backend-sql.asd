@@ -1,9 +1,9 @@
 (defsystem "task-backend-sql"
-  :version "0.1.0"
+  :version "0.1.1"
   :description "sql-protocol journal + worker leases for task-protocol"
   :author "egao1980"
   :license "MIT"
-  :depends-on ("task-protocol" "sql-protocol")
+  :depends-on ((:version "task-protocol" "0.2.1") "sql-protocol")
   :properties (:cl-repo
                (:ci (:with ("sql-backend-sqlite3")
                      :load-before-test ("sql-backend-sqlite3"))))
