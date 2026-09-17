@@ -16,17 +16,42 @@
   (typep x 'sql-task-journal))
 
 (defun encode-event (event)
-  "Serialize EVENT to a payload string (plist sexp; soft-use serdes/json)."
-  (task-protocol:encode-payload (task-protocol:event-plist event)))
+  "Serialize EVENT via task-protocol 0.2.1 ENCODE-EVENT.
+
+   When serdes/json is bound, persist :json-object (hash-table → JSON object).
+   encode-payload of a keyword plist would become a JSON array, which
+   DECODE-EVENT refuses to guess as a plist. Without JSON, prin1 the
+   sexp-plist so tests stay connection-free."
+  (if (%json-wire-p)
+      (task-protocol:encode-payload
+       (task-protocol:encode-event event :codec :json-object))
+      (with-standard-io-syntax
+        (let ((*print-readably* nil)
+              (*print-circle* t)
+              (*print-pretty* nil)
+              (*package* (find-package :cl)))
+          (prin1-to-string
+           (task-protocol:encode-event event :codec :sexp-plist))))))
+
+(defun %json-wire-p ()
+  "T when ENCODE-PAYLOAD would emit JSON (serdes *serdes-format* = :json)."
+  (let* ((pkg (find-package '#:serdes-protocol))
+         (fmt (and pkg (find-symbol "*SERDES-FORMAT*" pkg))))
+    (and fmt (boundp fmt)
+         (let ((v (symbol-value fmt)))
+           (or (eq v :json)
+               (and (symbolp v)
+                    (equal (symbol-name v) "JSON")))))))
 
 (defun decode-event (payload)
-  "Rehydrate a TASK-EVENT from a payload string."
+  "Rehydrate a TASK-EVENT via task-protocol DECODE-EVENT.
+   Does not replace EVENT-FROM-PLIST; vectors stay arrays."
   (let ((data (if (stringp payload)
                   (task-protocol:decode-payload payload)
                   payload)))
     (if (typep data 'task-protocol:task-event)
         data
-        (task-protocol:event-from-plist data))))
+        (task-protocol:decode-event data))))
 
 (defun %exec (journal sql &optional params)
   (sql-protocol:execute (sql-journal-connection journal) sql params))
@@ -138,9 +163,9 @@ VALUES (?, NULL, NULL, NULL, ?)"
 
 (defmethod task-protocol:import-events ((journal sql-task-journal) events)
   (dolist (event events journal)
-    (let ((e (if (listp event)
-                 (task-protocol:event-from-plist event)
-                 (task-protocol:copy-event event))))
+    (let ((e (if (typep event 'task-protocol:task-event)
+                 (task-protocol:copy-event event)
+                 (task-protocol:decode-event event))))
       (task-protocol:append-event journal e))))
 
 (defmethod task-protocol:replay-journal ((journal sql-task-journal) task)
