@@ -12,7 +12,7 @@ jobs:
     uses: egao1980/cl-repository/.github/workflows/test-system.yml@main
 
   test-ecl:
-    uses: egao1980/cl-repository/.github/workflows/test-system-impl.yml@cursor/test-system-impl-1989
+    uses: egao1980/cl-repository/.github/workflows/test-system-impl.yml@main
     permissions:
       contents: read
       packages: read
