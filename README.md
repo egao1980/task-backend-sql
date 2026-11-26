@@ -81,7 +81,7 @@ class rows, not new rule code.
 |------|--------|
 | `src/queue-schema.lisp` (DDL, revision 0002, `ensure-queue-schema`, `encode-value` / `decode-value`) | given |
 | `src/queue.lisp` (`sql-job-queue`, `make-sql-job-queue`) | given |
-| `src/queue.lisp` (every queue method) | stub (contract) |
+| `src/queue.lisp` (every queue method) | implemented |
 | `tests/conformance-*.lisp`, `tests/queue-sql-test.lisp` | contract |
 
 ## Tests
