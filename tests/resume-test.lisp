@@ -83,6 +83,11 @@
       (add (or (%system-dir "task-protocol") (%sibling-task-protocol-dir)))
       (dolist (name '("sql-protocol" "sql-backend-sqlite3" "dbd-sqlite3"
                       "dbi" "cl-dbi" "rove"))
+        (add (%system-dir name)))
+      ;; Every system this image loaded (cl-sqlite, cffi, …): under cl-repo,
+      ;; CL_REPOSITORY_DEST names the client tree, not the systems store,
+      ;; so the trees alone miss the driver's transitive dependencies.
+      (dolist (name (asdf:already-loaded-systems))
         (add (%system-dir name))))
     (nreverse dirs)))
 
