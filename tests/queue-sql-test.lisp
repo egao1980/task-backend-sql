@@ -306,7 +306,20 @@
                                         (bt:with-lock-held (lock)
                                           (setf (cdr (assoc class max-usage))
                                                 (max u (cdr (assoc class max-usage)))))))
-                                    (sleep 0.01)
+                                    ;; Hold a :heavy job until a second one is
+                                    ;; active (at most 2 s), so the overlap the
+                                    ;; last check needs doesn't depend on how
+                                    ;; fast a claim is (Windows runners: slower
+                                    ;; than a fixed 10 ms hold).
+                                    (if (eq class :heavy)
+                                        (loop with until = (+ (get-internal-real-time)
+                                                              (* 2 internal-time-units-per-second))
+                                              until (or (>= (bt:with-lock-held (lock)
+                                                              (cdr (assoc :heavy max-active)))
+                                                            2)
+                                                        (> (get-internal-real-time) until))
+                                              do (sleep 0.002))
+                                        (sleep 0.01))
                                     (bt:with-lock-held (lock)
                                       (decf (cdr (assoc class active))))
                                     (stack-task:complete-job
